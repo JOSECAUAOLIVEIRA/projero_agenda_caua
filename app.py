@@ -3,24 +3,22 @@ import sqlite3
 import datetime
 import os
 
-# Configuração da página
+# Aqui é a parte de configuração da pagina 
 st.set_page_config(
     page_title="Agenda de Tarefas",
     page_icon="📅",
     layout="wide"
 )
 
-# =============================================
-# BANCO DE DADOS - FUNÇÕES
-# =============================================
+
 
 def criar_conexao():
     """Cria conexão com o banco SQLite"""
-    # Criar pasta database se não existir
+    # Aqui tem a conexão com a database
     os.makedirs('database', exist_ok=True)
     
     conn = sqlite3.connect('database/agenda.db', check_same_thread=False)
-    # Ativar chaves estrangeiras
+    
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -29,7 +27,7 @@ def criar_tabelas():
     conn = criar_conexao()
     cursor = conn.cursor()
     
-    # Tabela de dias da semana
+    # Aqui é parte de criação das tabelas do dia da semana
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS dias_semana (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +36,7 @@ def criar_tabelas():
         )
     ''')
     
-    # Tabela de tarefas
+    # Aqui é a parte de tabela de tarefas
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tarefas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +53,7 @@ def criar_tabelas():
     
     conn.commit()
     
-    # Inserir dias da semana padrão
+    # Aqui é a parte que escolhe os dias da semana no projeto 
     dias_semana = [
         ('Segunda-feira', 1),
         ('Terça-feira', 2),
@@ -79,7 +77,7 @@ def adicionar_tarefa(dia_semana_id, titulo, descricao=None, horario=None, priori
     conn = criar_conexao()
     cursor = conn.cursor()
     
-    # Validar prioridade
+    # Aqui tem as prioridades de cada tarefa da agenda
     prioridades_validas = ['baixa', 'media', 'alta']
     if prioridade not in prioridades_validas:
         prioridade = 'media'
@@ -226,11 +224,11 @@ def contar_estatisticas():
     """Conta estatísticas das tarefas"""
     tarefas = listar_todas_tarefas()
     total = len(tarefas)
-    concluidas = sum(1 for t in tarefas if t[6])  # índice 6 = concluida
+    concluidas = sum(1 for t in tarefas if t[6])  
     
     prioridades = {'alta': 0, 'media': 0, 'baixa': 0}
     for tarefa in tarefas:
-        prioridade = tarefa[5]  # índice 5 = prioridade
+        prioridade = tarefa[5]  
         if prioridade in prioridades:
             prioridades[prioridade] += 1
     
@@ -240,26 +238,21 @@ def contar_estatisticas():
         'prioridades': prioridades
     }
 
-# =============================================
-# INTERFACE STREAMLIT
-# =============================================
 
 def main():
     st.title("📅 Minha Agenda de Tarefas")
     
-    # Inicializar banco de dados
+    
     criar_tabelas()
     
-    # Menu lateral
+    #Aqui é a parte do meu menu de tarefas  
     menu = st.sidebar.selectbox(
         "Menu",
         ["🏠 Visão Semanal", "➕ Adicionar Tarefa", "📋 Todas as Tarefas", "🔍 Buscar", "📊 Estatísticas"]
     )
-    
-    # Mostrar estatísticas rápidas no sidebar
+      
     mostrar_estatisticas_sidebar()
-    
-    # Navegação entre páginas
+      
     if menu == "🏠 Visão Semanal":
         mostrar_visao_semanal()
     elif menu == "➕ Adicionar Tarefa":
@@ -288,13 +281,12 @@ def mostrar_estatisticas_sidebar():
 def mostrar_visao_semanal():
     st.header("📋 Visão Semanal")
     
-    # Botão para adicionar tarefa rápido
+    # Aqui é onde eu adiciono as tarefas de forma rapida na agenda
     col1, col2 = st.columns([3, 1])
     with col2:
         if st.button("➕ Adicionar Tarefa Rápida", use_container_width=True):
             st.session_state.show_quick_add = True
     
-    # Formulário rápido para adicionar tarefa
     if st.session_state.get('show_quick_add', False):
         with st.form("quick_add_form"):
             st.subheader("Adicionar Tarefa Rápida")
@@ -343,7 +335,7 @@ def mostrar_visao_semanal():
         
         st.divider()
     
-    # Mostrar dias da semana
+    # Aqui é onde eu listo os dias da semana 
     dias = listar_dias_semana()
     
     for dia in dias:
@@ -392,7 +384,7 @@ def mostrar_adicionar_tarefa():
             if titulo and dia_selecionado:
                 dia_id = dias_dict[dia_selecionado]
                 
-                # Validar formato do horário
+                
                 if horario:
                     try:
                         datetime.datetime.strptime(horario, '%H:%M')
@@ -420,7 +412,7 @@ def mostrar_todas_tarefas():
     
     st.write(f"**Total:** {len(tarefas)} tarefas")
     
-    # Filtros
+    # Filtros 
     col1, col2, col3 = st.columns(3)
     with col1:
         filtrar_concluidas = st.selectbox("Status", ["Todas", "Pendentes", "Concluídas"])
@@ -429,23 +421,19 @@ def mostrar_todas_tarefas():
     with col3:
         filtrar_dia = st.selectbox("Dia", ["Todos"] + [nome for id, nome, ordem in listar_dias_semana()])
     
-    # Aplicar filtros
     tarefas_filtradas = []
     for tarefa in tarefas:
         (id, dia_id, titulo, descricao, horario, prioridade, 
          concluida, data_criacao, dia_nome, ordem) = tarefa
         
-        # Filtro de status
         if filtrar_concluidas == "Pendentes" and concluida:
             continue
         if filtrar_concluidas == "Concluídas" and not concluida:
             continue
-        
-        # Filtro de prioridade
+
         if filtrar_prioridade != "Todas" and prioridade.lower() != filtrar_prioridade.lower():
             continue
         
-        # Filtro de dia
         if filtrar_dia != "Todos" and dia_nome != filtrar_dia:
             continue
         
@@ -486,7 +474,7 @@ def mostrar_estatisticas_completas():
     concluidas = stats['concluidas']
     porcentagem = (concluidas / total) * 100
     
-    # Métricas principais
+    # Aqui temos algumas funcionalidades principais 
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total de Tarefas", total)
@@ -495,10 +483,9 @@ def mostrar_estatisticas_completas():
     with col3:
         st.metric("Taxa de Conclusão", f"{porcentagem:.1f}%")
     
-    # Progress bar
     st.progress(porcentagem / 100)
     
-    # Estatísticas por prioridade
+    # Aqui temos as estatisticas de cada prioridade
     st.subheader("📈 Distribuição por Prioridade")
     prioridades = stats['prioridades']
     
@@ -510,8 +497,7 @@ def mostrar_estatisticas_completas():
     with col3:
         st.metric("🟢 Baixa", prioridades['baixa'])
     
-    # Gráfico de pizza simples (usando texto)
-    st.subheader("🍕 Distribuição Visual")
+    st.subheader(" Distribuição Visual")
     
     if total > 0:
         cols = st.columns(3)
@@ -529,7 +515,7 @@ def mostrar_estatisticas_completas():
                 if valor > 0:
                     st.write(f"{prioridade.title()}: {valor} ({valor/total*100:.1f}%)")
     
-    # Tarefas recentes
+    # Aqui temos a busca por tarefas recentes
     st.subheader("🕒 Tarefas Recentes")
     tarefas_recentes = listar_todas_tarefas()[:5]  # Últimas 5 tarefas
     if tarefas_recentes:
@@ -547,12 +533,12 @@ def exibir_tarefa(tarefa):
     (id, dia_id, titulo, descricao, horario, prioridade, 
      concluida, data_criacao, dia_nome, *extra) = tarefa
     
-    # Container para cada tarefa
+    # Aqqui temos o status para cada tarefa  
     with st.container():
         col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
         
         with col1:
-            # Status (concluída ou pendente) - riscado se concluído
+            
             status = "✅" if concluida else "⏳"
             if concluida:
                 st.write(f"{status} ~~{titulo}~~")
@@ -564,12 +550,12 @@ def exibir_tarefa(tarefa):
                 st.caption(descricao)
         
         with col2:
-            # Horário e dia
+            # Aqui temos Horário e dia da tarefa 
             if horario:
                 st.write(f"🕒 {horario}")
             st.write(f"📅 {dia_nome}")
             
-            # Data de criação
+            #Aqui temos a Data de criação
             if data_criacao:
                 try:
                     data = datetime.datetime.strptime(data_criacao, '%Y-%m-%d %H:%M:%S')
@@ -578,12 +564,12 @@ def exibir_tarefa(tarefa):
                     st.caption(f"Criada: {data_criacao}")
         
         with col3:
-            # Prioridade com cores
+            # prioridades por cores
             cores = {'alta': '🔴', 'media': '🟡', 'baixa': '🟢'}
             st.write(f"{cores.get(prioridade, '⚪')} {prioridade.title()}")
         
         with col4:
-            # Botões de ação
+        
             col_a, col_b = st.columns(2)
             
             with col_a:
@@ -604,12 +590,8 @@ def exibir_tarefa(tarefa):
         
         st.divider()
 
-# =============================================
-# INICIALIZAÇÃO
-# =============================================
-
 if __name__ == "__main__":
-    # Inicializar session state
+    
     if 'show_quick_add' not in st.session_state:
         st.session_state.show_quick_add = False
     
